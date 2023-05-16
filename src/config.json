@@ -1,0 +1,37 @@
+{
+  "interval": 600,
+  "fdj_cache_lifetime": 5,
+  "med_cache_lifetime": 900,
+  "med": "https://www.matchendirect.fr/",
+  "PORT": 3002,
+  "competitions": {
+    "ligue-1": {
+      "med": "https://www.matchendirect.fr/france/ligue-1/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/france/ligue-1-uber-eats"
+    },
+    "premier-ligue": {
+      "med": "https://www.matchendirect.fr/angleterre/barclays-premiership-premier-league/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/angleterre/premier-league"
+    },
+    "ligue-des-champions": {
+      "med": "https://www.matchendirect.fr/europe/ligue-des-champions-uefa/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/coupes-d-europe/championsleague"
+    },
+    "ligue-europa": {
+      "med": "https://www.matchendirect.fr/europe/uefa-europa-league/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/coupes-d-europe/europa-league"
+    },
+    "bundesliga": {
+      "med": "https://www.matchendirect.fr/allemagne/bundesliga-1/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/allemagne/bundesliga-1"
+    },
+    "serie-a": {
+      "med": "https://www.matchendirect.fr/italie/serie-a/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/italie/serie-a"
+    },
+    "laliga": {
+      "med": "https://www.matchendirect.fr/espagne/primera-division/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/espagne/laliga"
+    }
+  }
+}
