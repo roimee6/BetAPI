@@ -1,9 +1,10 @@
 const fs = require("fs");
+const util = require("./util");
 const axios = require("axios");
 
-const HTMLParser = require("node-html-parser");
+const {parse} = require("node-html-parser");
 
-const {stringContains, getYearWeek} = require("./functions");
+const regex = /[0-9]+(?:\.[0-9]+)?/g;
 
 module.exports = async function (competition, useCache) {
     if (useCache && (cache[competition].last && (Math.round(Date.now() / 1000) - cache[competition].last) <= config.fdj_cache_lifetime)) {
@@ -14,91 +15,64 @@ module.exports = async function (competition, useCache) {
     console.log(Date.now() / 1000);
 
     const data = config.competitions[competition];
-    const result = {};
+    const result = [];
 
-    const fdj = await getCompetitionFdjMatchs(data.fdj);
-    const fdjInfos = fdj.querySelectorAll(".psel-event");
+    const page = await getMedPage(data.med + util.getYearWeek(), useCache);
 
-    const odds = fdjInfos.filter(odd => odd.querySelector(".psel-bet-option") === null).map(odd => odd.rawText);
-    const root = await getMedPage(data.med + getYearWeek(), useCache);
+    const odds = (await getCompetitionFdjMatchs(data.fdj)).querySelectorAll(".psel-event");
+    const events = page.querySelectorAll("[data-matchid]");
 
-    const dm = root.querySelectorAll(".lm3_eq1").map(dm => dm.rawText);
-    const ext = root.querySelectorAll(".lm3_eq2").map(ext => ext.rawText);
-    const score = root.querySelectorAll(".lm3_score").map(score => score.rawText);
-    const time = root.querySelectorAll("*[data-matchid] .lm1").map(time => time.rawText);
-    const status = root.querySelectorAll("*[data-matchid] .lm2").map(status => status.rawText);
+    const _odds = odds.filter((odd) => {
+        const opt = odd.querySelector(".psel-bet-option");
+        return opt === null || opt.rawText.includes("90");
+    }).map(odd => odd.rawText);
 
-    for (let count = 0; count < dm.length; count++) {
-        const eventScore = score[count].replaceAll(" ", "").split("-");
+    for (const event of events) {
+        let [score, hour, status, home, outside] = [
+            event.querySelector(".lm3_score").rawText.replaceAll(" ", ""),
+            event.querySelector(".lm1").rawText,
+            event.querySelector(".lm2").rawText.slice(5),
+            event.querySelector(".lm3_eq1").rawText,
+            event.querySelector(".lm3_eq2").rawText
+        ];
 
-        const st = status[count].slice(5);
-        const hour = time[count];
-
-        const home = dm[count];
-        const outside = ext[count];
-
-        const homeScore = parseInt(eventScore[0]) || 0;
-        const outsideScore = parseInt(eventScore[1]) || 0;
+        const homeScore = parseInt(score.split("-")[0]) || 0;
+        const outsideScore = parseInt(score.split("-")[1]) || 0;
 
         const winner = (homeScore === outsideScore) ? null : (homeScore > outsideScore ? home : outside);
+        status = status.includes("'") ? 1 : (status.startsWith("Termin") ? 0 : 2);
+
+        const day = util.getMatchDayByPage(page, event);
         let [home_odd, neutral_odd, outside_odd] = [1, 1, 1];
 
-        const regex = /[0-9]+(?:\.[0-9]+)?/g;
-        let day = "";
-
-        for (const odd of odds) {
-            if (stringContains(odd, home.split(" ")) && stringContains(odd, outside.split(" "))) {
-                day = getDay(fdj, odd);
-
+        for (const odd of _odds) {
+            if (
+                util.stringContains(odd, home.split(" ")) &&
+                util.stringContains(odd, outside.split(" "))
+            ) {
                 const data = odd.replaceAll(",", ".").match(regex);
                 [home_odd, neutral_odd, outside_odd] = [parseFloat(data[data.length - 3]), parseFloat(data[data.length - 2]), parseFloat(data[data.length - 1])];
                 break;
             }
         }
 
-        result[count] = {
-            home,
-            outside,
-
-            home_odd,
-            neutral_odd,
-            outside_odd,
-
-            day,
-            hour,
-
-            status: st.includes("'") ? 1 : (st.startsWith("Termin") ? 0 : 2),
-            winner
-        };
+        result.push({
+            home, outside,
+            home_odd, neutral_odd, outside_odd,
+            day, hour,
+            status, score, winner
+        });
     }
 
-    cache[competition].data = result;
-    cache[competition].last = Math.round(Date.now() / 1000);
-
-    fs.writeFileSync("./src/assets/" + competition + ".json", JSON.stringify(result));
+    cache[competition] = {
+        data: result,
+        last: Math.round(Date.now() / 1000)
+    };
 
     console.log(Date.now() / 1000);
-    return cache[competition].data;
-};
 
-function getDay(root, string) {
-    const events = root.querySelectorAll(".psel-title-rubric, .psel-event");
-    let day = "";
-
-    for (const event of events) {
-        if (event.querySelector(".psel-bet-option") !== null) {
-            continue;
-        }
-
-        if (event.rawAttrs.includes("psel-title-rubric")) {
-            day = event.rawText;
-        } else {
-            if (event.rawText === string) {
-                return day;
-            }
-        }
-    }
-    return "Date inconnue";
+    fs.writeFileSync("./src/assets/" + competition + ".json", JSON.stringify(result));
+    return result;
 }
 
 async function getMedPage(link, useCache) {
@@ -115,7 +89,7 @@ async function getMedPage(link, useCache) {
     });
 
     const body = await response.data;
-    const root = HTMLParser.parse(body);
+    const root = parse(body);
 
     pages[link] = {
         last: Math.round(Date.now() / 1000),
@@ -135,5 +109,5 @@ async function getCompetitionFdjMatchs(link) {
     });
 
     const body = await response.data;
-    return HTMLParser.parse(body);
+    return parse(body);
 }

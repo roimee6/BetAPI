@@ -32,6 +32,10 @@
     "laliga": {
       "med": "https://www.matchendirect.fr/espagne/primera-division/",
       "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/espagne/laliga"
+    },
+    "liga-portugal": {
+      "med": "https://www.matchendirect.fr/portugal/bwin-liga/",
+      "fdj": "https://www.enligne.parionssport.fdj.fr/paris-football/portugal/liga-portugal"
     }
   }
 }
