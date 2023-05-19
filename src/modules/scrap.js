@@ -30,7 +30,7 @@ module.exports = async function (competition, useCache) {
     for (const event of events) {
         let [score, hour, status, home, outside] = [
             event.querySelector(".lm3_score").rawText.replaceAll(" ", ""),
-            event.querySelector(".lm1").rawText,
+            event.querySelector(".lm1").rawText.replace(":", "h"),
             event.querySelector(".lm2").rawText.slice(5),
             event.querySelector(".lm3_eq1").rawText,
             event.querySelector(".lm3_eq2").rawText
@@ -40,7 +40,7 @@ module.exports = async function (competition, useCache) {
         const outsideScore = parseInt(score.split("-")[1]) || 0;
 
         const winner = (homeScore === outsideScore) ? null : (homeScore > outsideScore ? home : outside);
-        status = status.includes("'") ? 1 : (status.startsWith("Termin") ? 0 : 2);
+        status = status.includes("'") ? 1 : ((status.startsWith("Termin") || status.startsWith("Apr")) ? 0 : 2);
 
         const day = util.getMatchDayByPage(page, event);
         let [home_odd, neutral_odd, outside_odd] = [1, 1, 1];
